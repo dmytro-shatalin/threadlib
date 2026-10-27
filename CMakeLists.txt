@@ -15,14 +15,13 @@ option(THREADLIB_INSTALL "Generate install rules" ${PROJECT_IS_TOP_LEVEL})
 
 add_library(threadlib STATIC
         src/threadlib/thread_pool.cpp
-        src/threadlib/stl.cpp
 )
 add_library(threadlib::threadlib ALIAS threadlib)
 
 target_sources(threadlib PUBLIC
         FILE_SET HEADERS
         BASE_DIRS include
-        FILES include/threadlib/thread_pool.h include/threadlib/stl.h
+        FILES include/threadlib/thread_pool.h include/threadlib/stl_queue.h
 )
 target_compile_features(threadlib PUBLIC
         cxx_std_23
