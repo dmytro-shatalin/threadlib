@@ -21,7 +21,7 @@ add_library(threadlib::threadlib ALIAS threadlib)
 target_sources(threadlib PUBLIC
         FILE_SET HEADERS
         BASE_DIRS include
-        FILES include/threadlib/thread_pool.h include/threadlib/stl_queue.h
+        FILES include/threadlib/thread_pool.h include/threadlib/task.h include/threadlib/stl_queue.h
 )
 target_compile_features(threadlib PUBLIC
         cxx_std_23
