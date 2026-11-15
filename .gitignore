@@ -127,6 +127,9 @@ build/
 # File-based project format
 *.iws
 
+# VSCodium
+.vscode
+
 # IntelliJ
 out/
 
