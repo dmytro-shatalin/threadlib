@@ -25,7 +25,7 @@ class task {
   struct callable : base {
     Func f;
 
-    explicit callable(Func &&f) : f{std::forward<Func>(f)} {}
+    explicit callable(Func &&f) : f{std::forward<Func>(f)} {} //NOSONAR
 
     void run(std::stop_token stop) override { f(stop); }
   };

@@ -15,6 +15,7 @@
 #include <memory>
 #include <mutex>
 #include <optional>
+#include <ranges>
 #include <stop_token>
 #include <tuple>
 #include <type_traits>
@@ -257,6 +258,38 @@ public:
     (batch.emplace_back(
          detail::make_list_task<R>(list.st_, std::forward<Jobs>(jobs), i++)),
      ...);
+
+    if (!enqueue_all(std::move(batch))) {
+      list.fail_all(std::make_exception_ptr(
+          std::future_error{std::future_errc::broken_promise}));
+    }
+
+    return list;
+  }
+
+  template <std::ranges::sized_range Range>
+    requires(!detail::stoppable_callable<std::remove_cvref_t<Range>> &&
+             detail::stoppable_callable<std::ranges::range_value_t<Range>>)
+  auto submit_list(Range &&jobs) -> future_list<
+      detail::stoppable_result_of<std::ranges::range_value_t<Range>>> {
+    using R = detail::stoppable_result_of<std::ranges::range_value_t<Range>>;
+    size_t len = jobs.size();
+
+    future_list<R> list;
+    list.st_ = std::make_shared<typename future_list<R>::state>(len);
+
+    if (len == 0) {
+      return list;
+    }
+
+    std::vector<task> batch;
+    batch.reserve(len);
+
+    size_t i = 0;
+    for (auto &&job : jobs) {
+      batch.emplace_back(detail::make_list_task<R>(
+          list.st_, std::forward<decltype(job)>(job), i++));
+    }
 
     if (!enqueue_all(std::move(batch))) {
       list.fail_all(std::make_exception_ptr(
