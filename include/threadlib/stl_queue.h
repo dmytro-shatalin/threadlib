@@ -14,6 +14,7 @@
 #include <utility>
 
 namespace threadlib {
+
 template <typename Tp> class queue {
   std::queue<Tp> q_;
   bool closed_{false};
@@ -32,7 +33,7 @@ public:
   queue &operator=(queue &&other) = delete;
 
   auto pop_try() -> std::optional<Tp> {
-    std::lock_guard lock{m_};
+    std::unique_lock lock{m_};
     if (q_.empty()) {
       return std::nullopt;
     }
@@ -69,7 +70,7 @@ public:
 
   auto push(const Tp &value) -> bool {
     {
-      std::lock_guard lock{m_};
+      std::unique_lock lock{m_};
       if (closed_) {
         return false;
       }
@@ -81,7 +82,7 @@ public:
 
   auto push(Tp &&value) -> bool {
     {
-      std::lock_guard lock{m_};
+      std::unique_lock lock{m_};
       if (closed_) {
         return false;
       }
@@ -95,7 +96,7 @@ public:
     requires std::convertible_to<std::ranges::range_reference_t<R>, Tp>
   auto push_range(R &&range) -> bool {
     {
-      std::lock_guard lock{m_};
+      std::unique_lock lock{m_};
       if (closed_) {
         return false;
       }
@@ -107,7 +108,7 @@ public:
 
   template <typename... Args> auto emplace(Args &&...args) -> bool {
     {
-      std::lock_guard lock{m_};
+      std::unique_lock lock{m_};
       if (closed_)
         return false;
       q_.emplace(std::forward<Args>(args)...);
@@ -117,17 +118,17 @@ public:
   }
 
   auto size() const -> std::size_t {
-    std::lock_guard lock{m_};
+    std::unique_lock lock{m_};
     return q_.size();
   }
 
   auto empty() const -> bool {
-    std::lock_guard lock{m_};
+    std::unique_lock lock{m_};
     return q_.empty();
   }
 
   void stop() {
-    std::lock_guard lock{m_};
+    std::unique_lock lock{m_};
     closed_ = true;
     cv_.notify_all();
   }
@@ -136,13 +137,13 @@ public:
   void clear() {
     std::queue<Tp> dropped;
     {
-      std::lock_guard lock{m_};
+      std::unique_lock lock{m_};
       dropped.swap(q_);
     }
   }
 
   auto is_closed() const -> bool {
-    std::lock_guard lock{m_};
+    std::unique_lock lock{m_};
     return closed_;
   }
 };
