@@ -1,7 +1,7 @@
 #include "threadlib/thread_pool.h"
 #include "threadlib/stl_queue.h"
 #include "threadlib/task.h"
-#include <algorithm>
+#include <memory>
 #include <stdexcept>
 #include <stop_token>
 #include <thread>
@@ -11,8 +11,10 @@
 using namespace threadlib;
 
 void run_worker(std::stop_token stop, queue<task> &tasks) {
-  while (!tasks.is_closed()) {
-    auto task = tasks.pop_wait([&tasks] { return !tasks.is_closed(); });
+  while (!stop.stop_requested()) {
+    auto task = tasks.pop_wait([&stop] {
+      return stop.stop_requested();
+    });
     if (!task) {
       return;
     }
@@ -52,11 +54,15 @@ public:
 
   impl &operator=(impl &&other) = delete;
 
-  void enqueue(task task) { tasks_.push(std::move(task)); }
+  bool enqueue(task task) { return tasks_.push(std::move(task)); }
 
-  bool enqueue_all(std::vector<task> const &batch) {
-    return std::ranges::all_of(
-        batch, [this](const task &task) { return tasks_.push(task); });
+  bool enqueue_all(std::vector<task> batch) {
+    for (auto &t : batch) {
+      if (!tasks_.push(std::move(t))) {
+        return false;
+      }
+    }
+    return true;
   }
 
   void stop() { tasks_.stop(); }
@@ -69,3 +75,23 @@ public:
     }
   }
 };
+
+thread_pool::thread_pool(size_t n) : pimpl_(std::make_unique<impl>(n)) {}
+
+thread_pool::~thread_pool() noexcept = default;
+
+thread_pool::thread_pool(thread_pool &&) noexcept = default;
+
+thread_pool &thread_pool::operator=(thread_pool &&) noexcept = default;
+
+void thread_pool::stop() { pimpl_->stop(); }
+
+void thread_pool::stop_forced() { pimpl_->stop_forced(); }
+
+bool thread_pool::enqueue(task task) {
+  return pimpl_->enqueue(std::move(task));
+}
+
+bool thread_pool::enqueue_all(std::vector<task> batch) {
+  return pimpl_->enqueue_all(std::move(batch));
+}

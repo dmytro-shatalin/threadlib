@@ -11,6 +11,6 @@ build:
 	@cmake --build build
 
 example: prepare
-	@cmake -DTHREADLIB_BUILD_EXAMPLE=ON -S . -B build
-	@cmake --build build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+	@cmake -DTHREADLIB_BUILD_EXAMPLE=ON -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -S . -B build
+	@cmake --build build
 	./build/bin/threadlib_example
